@@ -9,4 +9,4 @@
 [submodule "ext/oomph"]
     path = ext/oomph
     url = https://github.com/ghex-org/oomph.git
-    branch = main
+	branch = align_2mb
