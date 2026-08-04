@@ -95,7 +95,7 @@ build_libfabric:
   extends: .container-runner-clariden-gh200
   variables:
     SLURM_GPUS_PER_TASK: 1
-    SLURM_TIMELIMIT: '5:00'
+    SLURM_TIMELIMIT: '10:00'
     SLURM_PARTITION: normal
     SLURM_MPI_TYPE: pmix
     SLURM_NETWORK: disable_rdzv_get
@@ -121,7 +121,7 @@ build_libfabric:
     # writing inside the container.
     - if [[ "${SLURM_LOCALID}" == 0 ]]; then rm -rf /ghex/build/Testing; mkdir /tmp/Testing; ln -s /tmp/Testing /ghex/build/Testing; fi
     - until [[ -L /ghex/build/Testing ]]; do sleep 1; done
-    - spack -e ci build-env ghex -- ctest --test-dir /ghex/build -L "parallel-ranks-${SLURM_NTASKS}" --output-on-failure --timeout 60
+    - spack -e ci build-env ghex -- ctest --test-dir /ghex/build -L "parallel-ranks-${SLURM_NTASKS}" --output-on-failure --timeout 180
 
 .test_parallel_job:
   extends: .test_parallel_template
@@ -185,6 +185,12 @@ test_parallel_2_mpi:
   variables:
     SLURM_NTASKS: 2
 
+test_parallel_2_mpi_2nodes:
+  extends: .test_parallel_mpi
+  variables:
+    SLURM_NTASKS: 2
+    SLURM_NTASKS_PER_NODE: 1
+
 test_parallel_4_mpi:
   extends: .test_parallel_mpi
   variables:
@@ -206,6 +212,12 @@ test_parallel_2_ucx:
   extends: .test_parallel_ucx
   variables:
     SLURM_NTASKS: 2
+
+test_parallel_2_ucx_2nodes:
+  extends: .test_parallel_ucx
+  variables:
+    SLURM_NTASKS: 2
+    SLURM_NTASKS_PER_NODE: 1
 
 test_parallel_4_ucx:
   extends: .test_parallel_ucx
