@@ -105,6 +105,11 @@ register_communication_object(nanobind::module_& m)
             auto _communication_object = register_class<type>(m);
             auto _handle = register_class<handle>(m);
 
+#if defined(GHEX_CUDACC)
+            _communication_object.def("has_scheduled_exchange",
+                [](type& co) -> bool { return co.has_scheduled_exchange(); });
+#endif
+
             _handle
                 .def("wait", &handle::wait)
 #if defined(GHEX_CUDACC)
@@ -174,8 +179,6 @@ register_communication_object(nanobind::module_& m)
                             },
                             nanobind::keep_alive<0, 1>(), nanobind::arg("stream").none(),
                             nanobind::arg("b0"), nanobind::arg("b1"), nanobind::arg("b2"))
-                        .def("has_scheduled_exchange",
-                            [](type& co) -> bool { return co.has_scheduled_exchange(); })
 #endif // end scheduled exchange
                         ;
                 });
