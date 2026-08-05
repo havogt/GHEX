@@ -7,6 +7,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 #
+import gc
+
 import numpy as np
 import pytest
 
@@ -127,3 +129,10 @@ def test_pattern(capsys, ndim, periodic):
             assert local_idx in sub_grids[value_owner_coord].subset["definition"]
 
             assert rank_field[m_idx] == value_owner_rank
+
+    # Same cleanup the `cart_context`/`mpi_cart_comm` fixtures do: without it every
+    # parametrization leaks an MPI context id and leaves UCX state behind, which makes
+    # later parallel tests hang.
+    del ctx
+    gc.collect()
+    mpi_cart_comm.Free()
