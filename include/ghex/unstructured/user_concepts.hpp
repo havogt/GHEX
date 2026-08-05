@@ -463,8 +463,11 @@ pack_kernel_levels_first(const T* values, const std::size_t local_indices_size,
     const std::size_t* local_indices, const std::size_t levels, T* buffer,
     const std::size_t index_stride, const std::size_t buffer_index_stride)
 {
-    const std::size_t level = threadIdx.x + (blockIdx.x * blockDim.x);
-    const std::size_t idx = threadIdx.y + (blockIdx.y * blockDim.y);
+    // the index blocks are mapped to gridDim.x (levels to gridDim.y) because the
+    // number of indices may exceed the gridDim.y limit of 65535 blocks; the
+    // thread mapping keeps levels on threadIdx.x for coalesced accesses
+    const std::size_t level = threadIdx.x + (blockIdx.y * blockDim.x);
+    const std::size_t idx = threadIdx.y + (blockIdx.x * blockDim.y);
 
     if (idx < local_indices_size && level < levels)
     {
@@ -496,8 +499,9 @@ unpack_kernel_levels_first(const T* buffer, const std::size_t local_indices_size
 
     const std::size_t index_stride, const std::size_t buffer_index_stride)
 {
-    const std::size_t level = threadIdx.x + (blockIdx.x * blockDim.x);
-    const std::size_t idx = threadIdx.y + (blockIdx.y * blockDim.y);
+    // see pack_kernel_levels_first for the block mapping
+    const std::size_t level = threadIdx.x + (blockIdx.y * blockDim.x);
+    const std::size_t idx = threadIdx.y + (blockIdx.x * blockDim.y);
 
     if (idx < local_indices_size && level < levels)
     {
@@ -596,12 +600,13 @@ class data_descriptor<gpu, DomainId, Idx, T>
                     std::ceil(static_cast<double>(is.local_indices().size()) /
                               GHEX_UNSTRUCTURED_SERIALIZATION_THREADS_PER_BLOCK_Y));
 
-                const dim3 blocks(blocks_levels, blocks_indices);
+                const dim3 blocks(blocks_indices, blocks_levels);
 
                 pack_kernel_levels_first<value_type><<<blocks, threads_per_block, 0,
                     *(reinterpret_cast<cudaStream_t*>(stream_ptr))>>>(m_values,
                     is.local_indices().size(), is.local_indices().data(), m_levels, buffer,
                     m_index_stride, m_levels);
+                GHEX_CHECK_CUDA_RESULT(cudaGetLastError());
             }
             else
             {
@@ -618,6 +623,7 @@ class data_descriptor<gpu, DomainId, Idx, T>
                     *(reinterpret_cast<cudaStream_t*>(stream_ptr))>>>(m_values,
                     is.local_indices().size(), is.local_indices().data(), m_levels, buffer,
                     m_level_stride, is.local_indices().size());
+                GHEX_CHECK_CUDA_RESULT(cudaGetLastError());
             }
         }
     }
@@ -639,12 +645,13 @@ class data_descriptor<gpu, DomainId, Idx, T>
                     std::ceil(static_cast<double>(is.local_indices().size()) /
                               GHEX_UNSTRUCTURED_SERIALIZATION_THREADS_PER_BLOCK_Y));
 
-                const dim3 blocks(blocks_levels, blocks_indices);
+                const dim3 blocks(blocks_indices, blocks_levels);
 
                 unpack_kernel_levels_first<value_type><<<blocks, threads_per_block, 0,
                     *(reinterpret_cast<cudaStream_t*>(stream_ptr))>>>(buffer,
                     is.local_indices().size(), is.local_indices().data(), m_levels, m_values,
                     m_index_stride, m_levels);
+                GHEX_CHECK_CUDA_RESULT(cudaGetLastError());
             }
             else
             {
@@ -661,6 +668,7 @@ class data_descriptor<gpu, DomainId, Idx, T>
                     *(reinterpret_cast<cudaStream_t*>(stream_ptr))>>>(buffer,
                     is.local_indices().size(), is.local_indices().data(), m_levels, m_values,
                     m_level_stride, is.local_indices().size());
+                GHEX_CHECK_CUDA_RESULT(cudaGetLastError());
             }
         }
     }
