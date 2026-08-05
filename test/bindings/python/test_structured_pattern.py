@@ -7,8 +7,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 #
-import gc
-
 import numpy as np
 import pytest
 
@@ -130,9 +128,7 @@ def test_pattern(capsys, ndim, periodic):
 
             assert rank_field[m_idx] == value_owner_rank
 
-    # Same cleanup the `cart_context`/`mpi_cart_comm` fixtures do: without it every
-    # parametrization leaks an MPI context id and leaves UCX state behind, which makes
-    # later parallel tests hang.
-    del ctx
-    gc.collect()
+    # Without this every parametrization leaks an MPI context id and leaves UCX state
+    # behind, which makes later parallel tests hang. No teardown ordering is needed:
+    # the ghex context holds a duplicate of this communicator, not the communicator.
     mpi_cart_comm.Free()
