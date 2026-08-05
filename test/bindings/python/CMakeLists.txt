@@ -5,6 +5,14 @@
 set(venv_dir "${CMAKE_BINARY_DIR}/test_venv")
 # test requirements
 set(reqs "${CMAKE_SOURCE_DIR}/bindings/python/min-requirements-test.txt")
+# the gpu parametrizations of the python tests skip unless cupy is importable
+if (ghex_gpu_mode STREQUAL "cuda")
+    if (CMAKE_CUDA_COMPILER_VERSION VERSION_LESS 13)
+        set(gpu_reqs "cupy-cuda12x")
+    else()
+        set(gpu_reqs "cupy-cuda13x")
+    endif()
+endif()
 # get the path to the pyghex module's parent directory
 get_target_property(python_mod_path pyghex LIBRARY_OUTPUT_DIRECTORY)
 get_filename_component(pyghex_test_workdir ${python_mod_path}/.. ABSOLUTE)
@@ -32,7 +40,7 @@ add_custom_command(
 # command to install test dependencies into the virtual environment
 add_custom_command(
     OUTPUT ${venv_dir}/bin/pytest
-    COMMAND ${venv_dir}/bin/pip install -r ${reqs}
+    COMMAND ${venv_dir}/bin/pip install -r ${reqs} ${gpu_reqs}
     DEPENDS ${venv_dir}/bin/pip-upgraded
     COMMENT "Installing test dependencies"
 )
