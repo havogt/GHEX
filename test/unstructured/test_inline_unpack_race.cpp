@@ -256,18 +256,20 @@ TEST_F(mpi_test_fixture, inline_unpack_race)
     if (world_size != 2) GTEST_SKIP() << "test requires exactly 2 ranks";
 
     case_params p;
-    p.num_passes = static_cast<int>(env_or("RACE_PASSES", 4000));
-    p.spin_cycles = env_or("RACE_SPIN_CYCLES", 500000);
-    p.sleep_ms = env_or("RACE_SLEEP_MS", 150);
-    p.num_control_trials = static_cast<int>(env_or("RACE_CONTROL_TRIALS", 2));
-    p.num_trials = static_cast<int>(env_or("RACE_TRIALS", 8));
+    p.num_passes = static_cast<int>(env_or("GHEX_TEST_INLINE_UNPACK_RACE_PASSES", 5000));
+    p.spin_cycles = env_or("GHEX_TEST_INLINE_UNPACK_RACE_SPIN_CYCLES", 500000);
+    p.sleep_ms = env_or("GHEX_TEST_INLINE_UNPACK_RACE_SLEEP_MS", 150);
+    p.num_control_trials =
+        static_cast<int>(env_or("GHEX_TEST_INLINE_UNPACK_RACE_CONTROL_TRIALS", 2));
+    p.num_trials = static_cast<int>(env_or("GHEX_TEST_INLINE_UNPACK_RACE_TRIALS", 12));
 
     ghex::context ctxt{MPI_COMM_WORLD, false};
 
     // whether the inline completion fires depends on transport, message size and
     // placement; cover several eager-sized messages unless RACE_HALO selects one
-    std::vector<int> halo_sizes = {128, 512, 4096};
-    if (const long h = env_or("RACE_HALO", 0)) halo_sizes = {static_cast<int>(h)};
+    std::vector<int> halo_sizes = {128, 512, 4096, 8192};
+    if (const long h = env_or("GHEX_TEST_INLINE_UNPACK_RACE_HALO", 0))
+        halo_sizes = {static_cast<int>(h)};
 
     int total_overlap = 0;
     for (const int halo_size : halo_sizes)

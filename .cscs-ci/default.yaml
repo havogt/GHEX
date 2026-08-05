@@ -163,10 +163,22 @@ test_parallel_2_nccl:
   variables:
     SLURM_NTASKS: 2
 
+test_parallel_2_nccl_2nodes:
+  extends: .test_parallel_nccl
+  variables:
+    SLURM_NTASKS: 2
+    SLURM_NTASKS_PER_NODE: 1
+
 test_parallel_4_nccl:
   extends: .test_parallel_nccl
   variables:
     SLURM_NTASKS: 4
+
+test_parallel_4_nccl_4nodes:
+  extends: .test_parallel_nccl
+  variables:
+    SLURM_NTASKS: 4
+    SLURM_NTASKS_PER_NODE: 1
 
 test_parallel_6_nccl:
   extends: .test_parallel_nccl
@@ -196,6 +208,12 @@ test_parallel_4_mpi:
   variables:
     SLURM_NTASKS: 4
 
+test_parallel_4_mpi_4nodes:
+  extends: .test_parallel_mpi
+  variables:
+    SLURM_NTASKS: 4
+    SLURM_NTASKS_PER_NODE: 1
+
 test_parallel_6_mpi:
   extends: .test_parallel_mpi
   variables:
@@ -223,6 +241,12 @@ test_parallel_4_ucx:
   extends: .test_parallel_ucx
   variables:
     SLURM_NTASKS: 4
+
+test_parallel_4_ucx_4nodes:
+  extends: .test_parallel_ucx
+  variables:
+    SLURM_NTASKS: 4
+    SLURM_NTASKS_PER_NODE: 1
 
 test_parallel_6_ucx:
   extends: .test_parallel_ucx
