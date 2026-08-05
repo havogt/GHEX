@@ -41,8 +41,9 @@ using data_descriptor_gpu_type =
 
 namespace
 {
-// larger than GHEX_UNSTRUCTURED_SERIALIZATION_THREADS_PER_BLOCK_Y * 65535
-constexpr int halo_size = 600000;
+// smallest halo for which the pack/unpack kernels exceed the CUDA gridDim.y
+// limit of 65535
+constexpr int halo_size = GHEX_UNSTRUCTURED_SERIALIZATION_THREADS_PER_BLOCK_Y * 65535 + 1;
 constexpr int inner_size = halo_size;
 
 // Each rank owns gids [rank*inner_size, (rank+1)*inner_size); its halo is the
