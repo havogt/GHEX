@@ -107,7 +107,7 @@ register_communication_object(nanobind::module_& m)
 
 #if defined(GHEX_CUDACC)
             _communication_object.def("has_scheduled_exchange",
-                [](type& co) -> bool { return co.has_scheduled_exchange(); });
+                [](const type& co) -> bool { return co.has_scheduled_exchange(); });
 #endif
 
             _handle
