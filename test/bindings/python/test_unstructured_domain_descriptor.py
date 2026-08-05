@@ -344,8 +344,11 @@ def test_domain_descriptor_async(on_gpu, stream_type, capsys, mpi_cart_comm, car
         inner_set = set(domains[ctx.rank()]["inner"])
         all_list = domains[ctx.rank()]["all"]
         if on_gpu:
+            # cupy does not understand the `__cuda_stream__` protocol, so pass the
+            # mock's underlying cupy stream for the device-to-host copy
+            cupy_stream = getattr(stream, "cupy_stream", stream)
             # NOTE: Without the explicit order it fails sometimes.
-            data = cp.asnumpy(data, order=order, stream=stream, blocking=True)
+            data = cp.asnumpy(data, order=order, stream=cupy_stream, blocking=True)
 
         for x in range(len(all_list)):
             gid = all_list[x]
