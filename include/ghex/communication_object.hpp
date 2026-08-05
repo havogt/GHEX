@@ -267,7 +267,11 @@ class communication_object
       * @tparam Archs list of device types
       * @tparam Fields list of field types
       * @param buffer_infos buffer_info objects created by binding a field descriptor to a pattern
-      * @return handle to await communication */
+      * @return handle to await communication
+      *
+      * @note For GPU fields this function does not synchronize with any device work: all
+      * previously submitted kernels accessing the exchanged fields must have completed when this
+      * function is called. Use `schedule_exchange()` to synchronize with a stream instead. */
     template<typename... Archs, typename... Fields>
     [[nodiscard]] handle_type exchange(buffer_info_type<Archs, Fields>... buffer_infos)
     {
@@ -310,7 +314,7 @@ class communication_object
     {
         complete_schedule_exchange();
         prepare_exchange_buffers(buffer_infos...);
-        schedule_sync_pack(stream);
+        schedule_sync_pack_unpack(stream);
 
         pack();
         m_comm.start_group();
@@ -328,7 +332,7 @@ class communication_object
     {
         complete_schedule_exchange();
         prepare_exchange_buffers(std::make_pair(std::move(first), std::move(last)));
-        schedule_sync_pack(stream);
+        schedule_sync_pack_unpack(stream);
 
         pack();
         m_comm.start_group();
@@ -872,9 +876,9 @@ class communication_object
         }
     }
 
-    // Add a dependency on the given stream streams such that packing happens
-    // after work on the given stream has completed, without blocking.
-    void schedule_sync_pack(cudaStream_t stream)
+    // Add a dependency on the given stream such that packing and unpacking
+    // happen after work on the given stream has completed, without blocking.
+    void schedule_sync_pack_unpack(cudaStream_t stream)
     {
         for_each(m_mem,
             [&, this](std::size_t, auto& m)
@@ -893,6 +897,22 @@ class communication_object
                             {
                                 // Make sure stream used for packing synchronizes with the
                                 // given stream.
+                                GHEX_CHECK_CUDA_RESULT(
+                                    cudaStreamWaitEvent(p1.second.m_stream.get(), e.get(), 0));
+                            }
+                        }
+                    }
+                    for (auto& p0 : m.recv_memory)
+                    {
+                        for (auto& p1 : p0.second)
+                        {
+                            if (p1.second.size > 0u)
+                            {
+                                // A receive-completion callback may launch the unpack kernel
+                                // as early as posting the receive; work submitted to the
+                                // given stream before the exchange may still be reading the
+                                // halo at that point, so the unpacking stream must
+                                // synchronize with the given stream as well.
                                 GHEX_CHECK_CUDA_RESULT(
                                     cudaStreamWaitEvent(p1.second.m_stream.get(), e.get(), 0));
                             }
